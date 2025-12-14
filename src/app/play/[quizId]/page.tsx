@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { database } from "@/lib/firebase";
 import { ref, onValue, set, get } from "firebase/database";
@@ -19,9 +18,22 @@ export default function GamePage() {
     const [myParticipant, setMyParticipant] = useState<any>(null);
     const [selectedOption, setSelectedOption] = useState<number | null>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [participantCount, setParticipantCount] = useState<number>(0);
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
+    const [answerStats, setAnswerStats] = useState<number[]>([0, 0, 0, 0]);
 
     const [timeLeft, setTimeLeft] = useState<number>(0);
+
+    // Audio refs
+    const audioRef = useRef<{ correct: HTMLAudioElement | null, wrong: HTMLAudioElement | null }>({ correct: null, wrong: null });
+
+    // Init Audio
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            audioRef.current.correct = new Audio("/sounds/correct.mp3");
+            audioRef.current.wrong = new Audio("/sounds/wrong.mp3");
+        }
+    }, []);
 
     // Init
     useEffect(() => {
@@ -52,18 +64,34 @@ export default function GamePage() {
             setMyParticipant(snapshot.val());
         });
 
-        // Listen to all participants for leaderboard
+        // Listen to all participants for leaderboard AND stats
         const allParticipantsRef = ref(database, `quizzes/${quizId}/participants`);
         const unsubAll = onValue(allParticipantsRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                const list = Object.values(data).sort((a: any, b: any) => {
+                const list = Object.values(data);
+
+                // Calculate Stats
+                const stats = [0, 0, 0, 0];
+                list.forEach((p: any) => {
+                    if (p.currentAnswerIndex >= 0 && p.currentAnswerIndex < 4) {
+                        stats[p.currentAnswerIndex]++;
+                    }
+                });
+                setAnswerStats(stats);
+
+                // Sort for Leaderboard
+                const sortedList = list.sort((a: any, b: any) => {
                     if (b.score !== a.score) {
                         return b.score - a.score;
                     }
                     return (a.lastAnswerTime || Number.MAX_VALUE) - (b.lastAnswerTime || Number.MAX_VALUE);
                 });
-                setLeaderboard(list.slice(0, 5)); // Top 5
+                setLeaderboard(sortedList.slice(0, 5)); // Top 5
+                setParticipantCount(sortedList.length);
+            } else {
+                setParticipantCount(0);
+                setAnswerStats([0, 0, 0, 0]);
             }
         });
 
@@ -73,6 +101,34 @@ export default function GamePage() {
             unsubAll();
         };
     }, [quizId, router]);
+
+    // Audio Logic on Result Show
+    useEffect(() => {
+        if (quizState?.showResult && currentQuestion) {
+            // Determine majority vote
+            const maxVotes = Math.max(...answerStats);
+            const majorityIndexes = answerStats.map((count, i) => count === maxVotes ? i : -1).filter(i => i !== -1);
+
+            // Check if majority was wrong (if majority includes a wrong answer, or just solely wrong)
+            // Logic: If the MOST popular choice was WRONG -> Bad Sound. Else -> Good Sound.
+            // If tie between Correct and Wrong, emphasize Good.
+            // Simpler: If majority chose Wrong -> Bad.
+
+            const correctIndex = currentQuestion.correctIndex;
+            const mostPopularIsWrong = majorityIndexes.some(i => i !== correctIndex) && !majorityIndexes.includes(correctIndex);
+
+            // Play sound with slight delay
+            const timer = setTimeout(() => {
+                const audio = mostPopularIsWrong ? audioRef.current.wrong : audioRef.current.correct;
+                if (audio) {
+                    audio.volume = 0.5;
+                    audio.play().catch((e: unknown) => console.log("Audio play failed:", e));
+                }
+            }, 500);
+
+            return () => clearTimeout(timer);
+        }
+    }, [quizState?.showResult, currentQuestion, answerStats]);
 
     // Update current question local state when global state index changes
     useEffect(() => {
@@ -121,6 +177,7 @@ export default function GamePage() {
             ...myParticipant,
             score: newScore,
             currentAnswerIndex: optionIndex,
+            answerQuestionIndex: quizState.currentQuestionIndex,
             lastAnswerTime: Date.now()
         });
     };
@@ -134,15 +191,53 @@ export default function GamePage() {
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-center max-w-md w-full bg-neutral-900 p-8 rounded-2xl border border-neutral-800 shadow-2xl"
+                    className="text-center max-w-md w-full"
                 >
-                    <div className="text-6xl mb-6 animate-pulse">⏳</div>
-                    <h1 className="text-3xl font-bold mb-4 text-white tracking-tight">Waiting for Host</h1>
-                    <p className="text-neutral-400 mb-8">The game will start shortly. Get ready!</p>
+                    <div className="bg-neutral-900 p-8 rounded-3xl border border-neutral-800 shadow-2xl space-y-8">
+                        <div>
+                            <motion.div
+                                animate={{ scale: [1, 1.1, 1] }}
+                                transition={{ repeat: Infinity, duration: 2 }}
+                                className="text-6xl mb-4 inline-block"
+                            >
+                                ⏳
+                            </motion.div>
+                            <h1 className="text-2xl font-bold text-white mb-2">Waiting for Host</h1>
+                            <p className="text-neutral-400">Get ready to play!</p>
+                        </div>
 
-                    <div className="p-4 bg-neutral-800/50 rounded-xl border border-neutral-700">
-                        <span className="text-neutral-500 text-xs font-bold uppercase tracking-wider block mb-1">You Joined As</span>
-                        <span className="font-bold text-xl text-blue-400">{myParticipant?.name}</span>
+                        <div className="flex flex-col gap-4">
+                            <div className="bg-neutral-800/50 p-4 rounded-xl border border-neutral-800">
+                                <span className="text-xs uppercase text-neutral-500 font-bold tracking-widest">Game PIN</span>
+                                <div className="text-4xl font-mono font-black text-blue-500 tracking-wider mt-1">{quizId}</div>
+                            </div>
+
+                            <div className="bg-neutral-800/50 p-4 rounded-xl border border-neutral-800 flex items-center justify-between px-6">
+                                <span className="text-sm font-bold text-neutral-400">Players Joined</span>
+                                <span className="text-2xl font-bold text-white flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    {participantCount}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-blue-900/10 rounded-xl border border-blue-500/20">
+                            <span className="text-blue-400 text-xs font-bold uppercase tracking-wider block mb-1">You are</span>
+                            <span className="font-bold text-xl text-white">{myParticipant?.name}</span>
+                        </div>
+
+                        <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            whileHover={{ scale: 1.05 }}
+                            className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl font-bold text-white shadow-lg shadow-orange-900/20 active:shadow-none transition-all"
+                            onClick={() => {
+                                // Add a little vibration if supported or just visual feedback
+                                if (navigator.vibrate) navigator.vibrate(50);
+                            }}
+                        >
+                            🔥 I'm Ready!
+                        </motion.button>
+                        <p className="text-xs text-neutral-600 font-medium">Click to hype yourself up</p>
                     </div>
                 </motion.div>
             )}
@@ -227,13 +322,51 @@ export default function GamePage() {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="bg-neutral-900 p-8 rounded-3xl shadow-2xl border border-neutral-800"
+                                className="bg-neutral-900 p-8 rounded-3xl shadow-2xl border border-neutral-800 max-w-3xl w-full"
                             >
+                                {/* STATS CHART */}
+                                <div className="mb-8">
+                                    <h3 className="text-xl font-bold text-center mb-6 text-white">Answer Distribution</h3>
+                                    <div className="flex items-end justify-center gap-4 h-40">
+                                        {answerStats.map((count, i) => {
+                                            const isCorrect = i === currentQuestion.correctIndex;
+                                            const total = participantCount || 1;
+                                            const percent = Math.round((count / total) * 100);
+                                            const height = Math.max(percent, 10); // min height
+
+                                            return (
+                                                <div key={i} className="flex flex-col items-center gap-2 w-16">
+                                                    <span className="text-xs font-bold text-neutral-400">{count}</span>
+                                                    <motion.div
+                                                        initial={{ height: 0 }}
+                                                        animate={{ height: `${height}%` }}
+                                                        transition={{ duration: 0.5, delay: i * 0.1 }}
+                                                        className={twMerge(
+                                                            "w-full rounded-t-lg transition-colors relative group",
+                                                            isCorrect ? "bg-green-500" : "bg-neutral-700"
+                                                        )}
+                                                    >
+                                                        {/* Label */}
+                                                    </motion.div>
+                                                    <div className={twMerge(
+                                                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                                                        isCorrect ? "bg-green-500 text-green-950" : "bg-neutral-700 text-neutral-400"
+                                                    )}>
+                                                        {String.fromCharCode(65 + i)}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="h-px bg-neutral-800 w-full mb-8"></div>
+
                                 <div className="text-center mb-8">
-                                    <h2 className="text-3xl font-bold mb-8 text-white">
+                                    <h2 className="text-2xl font-bold mb-8 text-white">
                                         Leaderboard
                                     </h2>
-                                    <p className="text-neutral-500">Top 5 Players</p>
+                                    <p className="text-neutral-500 text-sm">Top 5 Players</p>
                                 </div>
 
                                 <div className="space-y-3">

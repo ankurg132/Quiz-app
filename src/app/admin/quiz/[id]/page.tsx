@@ -264,15 +264,15 @@ export default function QuizControlPanel() {
                                         <img src={currentQ.imageUrl} className="w-full h-48 object-cover rounded-xl border border-neutral-800" alt="Q" />
                                     )}
 
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {currentQ.options.map((opt: string, i: number) => (
-                                            <div key={i} className={`p-4 rounded-xl border font-semibold text-sm transition-all ${i === currentQ.correctIndex
-                                                ? "border-green-500/50 bg-green-500/10 text-green-400"
-                                                : "border-neutral-800 bg-neutral-800/50 text-neutral-400"
-                                                }`}>
-                                                {opt}
+                                    {/* Live Stats display instead of options to hide answers */}
+                                    <div className="grid grid-cols-1 gap-6 mt-8">
+                                        <div className="bg-neutral-800/50 p-6 rounded-2xl border border-neutral-800 text-center">
+                                            <span className="text-sm font-bold text-neutral-500 uppercase tracking-widest block mb-2">Live Answers Submitted</span>
+                                            <div className="text-6xl font-black text-white tracking-tighter">
+                                                {participants.filter((p: any) => p.answerQuestionIndex === quiz.state.currentQuestionIndex).length}
+                                                <span className="text-2xl text-neutral-500 font-bold ml-2">/ {participants.length}</span>
                                             </div>
-                                        ))}
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -287,9 +287,99 @@ export default function QuizControlPanel() {
                             )}
 
                             {quiz.state.status === "finished" && !quiz.state.showResult && (
-                                <div className="flex flex-col items-center justify-center p-12 text-center bg-neutral-950/50 rounded-xl border border-neutral-800 border-dashed">
-                                    <h3 className="text-xl font-bold text-white">Game Over Screen</h3>
-                                    <p className="text-neutral-500 mt-2">Final scores displayed.</p>
+                                <div className="p-8 bg-neutral-900 rounded-2xl border border-neutral-800 space-y-12">
+                                    <div className="text-center">
+                                        <h1 className="text-4xl font-black text-white mb-2">🎉 Final Results 🎉</h1>
+                                        <p className="text-neutral-400">The quiz has ended. Here are the champions!</p>
+                                    </div>
+
+                                    {/* Podium */}
+                                    <div className="flex justify-center items-end gap-4 h-64 mb-8">
+                                        {/* 2nd Place */}
+                                        {participants.length > 1 && (
+                                            <div className="flex flex-col items-center w-1/4">
+                                                <div className="mb-2 text-center">
+                                                    <div className="text-neutral-300 font-bold text-lg truncate w-full max-w-[120px]">{participants[1].name}</div>
+                                                    <div className="text-neutral-500 text-sm font-mono">{participants[1].score} pts</div>
+                                                </div>
+                                                <motion.div
+                                                    initial={{ height: 0 }}
+                                                    animate={{ height: "60%" }}
+                                                    className="w-full bg-neutral-700 rounded-t-xl relative border-t-4 border-neutral-500"
+                                                >
+                                                    <div className="absolute top-4 w-full text-center text-4xl">🥈</div>
+                                                </motion.div>
+                                            </div>
+                                        )}
+
+                                        {/* 1st Place */}
+                                        {participants.length > 0 && (
+                                            <div className="flex flex-col items-center w-1/3 z-10">
+                                                <div className="mb-2 text-center">
+                                                    <div className="text-yellow-400 font-black text-2xl truncate w-full max-w-[150px]">{participants[0].name}</div>
+                                                    <div className="text-yellow-600 text-lg font-mono font-bold">{participants[0].score} pts</div>
+                                                </div>
+                                                <motion.div
+                                                    initial={{ height: 0 }}
+                                                    animate={{ height: "100%" }}
+                                                    className="w-full bg-gradient-to-t from-yellow-600 to-yellow-400 rounded-t-xl relative shadow-[0_0_50px_rgba(250,204,21,0.3)]"
+                                                >
+                                                    <div className="absolute top-4 w-full text-center text-6xl">👑</div>
+                                                </motion.div>
+                                            </div>
+                                        )}
+
+                                        {/* 3rd Place */}
+                                        {participants.length > 2 && (
+                                            <div className="flex flex-col items-center w-1/4">
+                                                <div className="mb-2 text-center">
+                                                    <div className="text-orange-300 font-bold text-lg truncate w-full max-w-[120px]">{participants[2].name}</div>
+                                                    <div className="text-neutral-500 text-sm font-mono">{participants[2].score} pts</div>
+                                                </div>
+                                                <motion.div
+                                                    initial={{ height: 0 }}
+                                                    animate={{ height: "40%" }}
+                                                    className="w-full bg-orange-800 rounded-t-xl relative border-t-4 border-orange-700"
+                                                >
+                                                    <div className="absolute top-4 w-full text-center text-4xl">🥉</div>
+                                                </motion.div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Score Distribution Graph */}
+                                    <div className="bg-neutral-950/50 p-6 rounded-xl border border-neutral-800">
+                                        <h3 className="text-neutral-400 font-bold uppercase tracking-widest text-xs mb-6">Score Distribution</h3>
+                                        <div className="flex items-end justify-between h-40 gap-2">
+                                            {/* We'll bucket scores manually roughly. Assuming increments of 10-20pts or simply top 10 players as bars */}
+                                            {/* Strategy: Top 10 Players Bar Chart */}
+                                            {participants.slice(0, 10).map((p: any, i: number) => {
+                                                const maxScore = participants[0]?.score || 1;
+                                                const height = (p.score / maxScore) * 100;
+
+                                                return (
+                                                    <div key={i} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer relative">
+                                                        {/* Tooltip */}
+                                                        <div className="absolute -top-10 bg-neutral-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
+                                                            {p.name}: {p.score}
+                                                        </div>
+
+                                                        <motion.div
+                                                            initial={{ height: 0 }}
+                                                            animate={{ height: `${Math.max(height, 5)}%` }}
+                                                            transition={{ delay: i * 0.05 }}
+                                                            className={clsx(
+                                                                "w-full rounded-t-md opacity-80 group-hover:opacity-100 transition-all",
+                                                                i === 0 ? "bg-yellow-500" : "bg-blue-600"
+                                                            )}
+                                                        />
+                                                        <div className="text-[10px] text-neutral-500 truncate w-full text-center">{p.name}</div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
                                 </div>
                             )}
                         </div>
