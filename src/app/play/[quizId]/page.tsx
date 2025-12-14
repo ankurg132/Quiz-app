@@ -209,7 +209,7 @@ export default function GamePage() {
                         <div className="flex flex-col gap-4">
                             <div className="bg-neutral-800/50 p-4 rounded-xl border border-neutral-800">
                                 <span className="text-xs uppercase text-neutral-500 font-bold tracking-widest">Game PIN</span>
-                                <div className="text-4xl font-mono font-black text-blue-500 tracking-wider mt-1">{quizId}</div>
+                                <div className="text-4xl font-mono font-black text-orange-500 tracking-wider mt-1">{quizId}</div>
                             </div>
 
                             <div className="bg-neutral-800/50 p-4 rounded-xl border border-neutral-800 flex items-center justify-between px-6">
@@ -221,8 +221,8 @@ export default function GamePage() {
                             </div>
                         </div>
 
-                        <div className="p-4 bg-blue-900/10 rounded-xl border border-blue-500/20">
-                            <span className="text-blue-400 text-xs font-bold uppercase tracking-wider block mb-1">You are</span>
+                        <div className="p-4 bg-orange-900/10 rounded-xl border border-orange-500/20">
+                            <span className="text-orange-400 text-xs font-bold uppercase tracking-wider block mb-1">You are</span>
                             <span className="font-bold text-xl text-white">{myParticipant?.name}</span>
                         </div>
 
@@ -253,7 +253,7 @@ export default function GamePage() {
                         </div>
                         <div className="flex flex-col gap-1 text-right">
                             <span className="text-xs uppercase">Your Score</span>
-                            <span className="text-blue-400 text-xl">{myParticipant?.score || 0}</span>
+                            <span className="text-orange-400 text-xl">{myParticipant?.score || 0}</span>
                         </div>
                     </div>
 
@@ -261,7 +261,7 @@ export default function GamePage() {
                     {!quizState.showResult && (
                         <div className="w-full h-2 bg-neutral-800 rounded-full mb-8 overflow-hidden">
                             <motion.div
-                                className="h-full bg-blue-500"
+                                className="h-full bg-orange-500"
                                 initial={{ width: "100%" }}
                                 animate={{ width: `${(timeLeft / (currentQuestion?.timeLimit || 20)) * 100}%` }}
                                 transition={{ ease: "linear", duration: 1 }}
@@ -297,7 +297,7 @@ export default function GamePage() {
                                                 "w-full p-5 rounded-xl text-left font-medium transition-all transform active:scale-[0.98] flex items-center group",
                                                 isSubmitted
                                                     ? (i === selectedOption
-                                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
+                                                        ? "bg-orange-600 text-white shadow-lg shadow-orange-900/40"
                                                         : "bg-neutral-800 text-neutral-500 opacity-50")
                                                     : "bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white"
                                             )}
@@ -327,33 +327,33 @@ export default function GamePage() {
                                 {/* STATS CHART */}
                                 <div className="mb-8">
                                     <h3 className="text-xl font-bold text-center mb-6 text-white">Answer Distribution</h3>
-                                    <div className="flex items-end justify-center gap-4 h-40">
+                                    <div className="flex items-end justify-center gap-4 h-48 px-4 sm:px-8">
                                         {answerStats.map((count, i) => {
                                             const isCorrect = i === currentQuestion.correctIndex;
                                             const total = participantCount || 1;
                                             const percent = Math.round((count / total) * 100);
-                                            const height = Math.max(percent, 10); // min height
+                                            const height = Math.max(percent, 5);
 
                                             return (
-                                                <div key={i} className="flex flex-col items-center gap-2 w-16">
-                                                    <span className="text-xs font-bold text-neutral-400">{count}</span>
-                                                    <motion.div
-                                                        initial={{ height: 0 }}
-                                                        animate={{ height: `${height}%` }}
-                                                        transition={{ duration: 0.5, delay: i * 0.1 }}
-                                                        className={twMerge(
-                                                            "w-full rounded-t-lg transition-colors relative group",
-                                                            isCorrect ? "bg-green-500" : "bg-neutral-700"
-                                                        )}
-                                                    >
-                                                        {/* Label */}
-                                                    </motion.div>
-                                                    <div className={twMerge(
-                                                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-                                                        isCorrect ? "bg-green-500 text-green-950" : "bg-neutral-700 text-neutral-400"
+                                                <div key={i} className="flex-1 flex flex-col items-center gap-2 max-w-[100px] group">
+                                                    <span className="text-lg font-bold text-white mb-1 group-hover:scale-110 transition-transform">{count}</span>
+                                                    <div className="w-full h-40 bg-neutral-800/50 rounded-t-xl relative overflow-hidden flex items-end">
+                                                        <motion.div
+                                                            initial={{ height: 0 }}
+                                                            animate={{ height: `${height}%` }}
+                                                            transition={{ duration: 0.8, ease: "easeOut" }}
+                                                            className={clsx(
+                                                                "w-full absolute bottom-0 left-0 right-0 rounded-t-xl transition-colors",
+                                                                isCorrect ? "bg-green-500" : "bg-neutral-700"
+                                                            )}
+                                                        />
+                                                    </div>
+                                                    <span className={clsx(
+                                                        "w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm",
+                                                        isCorrect ? "bg-green-500 text-green-950" : "bg-neutral-800 text-neutral-500"
                                                     )}>
                                                         {String.fromCharCode(65 + i)}
-                                                    </div>
+                                                    </span>
                                                 </div>
                                             )
                                         })}
@@ -376,7 +376,7 @@ export default function GamePage() {
                                             className={twMerge(
                                                 "flex justify-between items-center p-4 rounded-xl border transition-all",
                                                 p.name === myParticipant?.name
-                                                    ? "bg-blue-600/10 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
+                                                    ? "bg-orange-600/10 border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.2)]"
                                                     : "bg-neutral-800/50 border-neutral-800"
                                             )}
                                         >
@@ -389,7 +389,7 @@ export default function GamePage() {
                                                 )}>
                                                     #{i + 1}
                                                 </div>
-                                                <span className={clsx("font-semibold text-lg", p.name === myParticipant?.name ? "text-blue-400" : "text-neutral-200")}>{p.name}</span>
+                                                <span className={clsx("font-semibold text-lg", p.name === myParticipant?.name ? "text-orange-400" : "text-neutral-200")}>{p.name}</span>
                                             </div>
                                             <span className="font-mono text-xl font-bold text-neutral-400">{p.score}</span>
                                         </div>
@@ -397,7 +397,7 @@ export default function GamePage() {
                                 </div>
 
                                 <div className="mt-8 flex items-center justify-center gap-2 text-neutral-500 text-sm animate-pulse">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                                     Next question starting soon...
                                 </div>
                             </motion.div>
@@ -419,7 +419,7 @@ export default function GamePage() {
 
                     <div className="bg-neutral-900 p-8 rounded-3xl border border-neutral-800 mb-8 shadow-xl">
                         <p className="text-xs text-neutral-500 uppercase tracking-widest mb-2 font-bold">Your Final Score</p>
-                        <p className="text-7xl font-black text-blue-500 tracking-tighter">{myParticipant?.score}</p>
+                        <p className="text-7xl font-black text-orange-500 tracking-tighter">{myParticipant?.score}</p>
                     </div>
 
                     {/* Final Leaderboard */}
@@ -434,7 +434,7 @@ export default function GamePage() {
                                     className={twMerge(
                                         "flex justify-between items-center p-4 rounded-xl border transition-all",
                                         p.name === myParticipant?.name
-                                            ? "bg-blue-600/10 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
+                                            ? "bg-orange-600/10 border-orange-500/50 shadow-[0_0_15px_rgba(249,115,22,0.2)]"
                                             : "bg-neutral-800/50 border-neutral-800"
                                     )}
                                 >
@@ -447,7 +447,7 @@ export default function GamePage() {
                                         )}>
                                             #{i + 1}
                                         </div>
-                                        <span className={clsx("font-semibold text-lg", p.name === myParticipant?.name ? "text-blue-400" : "text-neutral-200")}>{p.name}</span>
+                                        <span className={clsx("font-semibold text-lg", p.name === myParticipant?.name ? "text-orange-400" : "text-neutral-200")}>{p.name}</span>
                                     </div>
                                     <span className="font-mono text-xl font-bold text-neutral-400">{p.score}</span>
                                 </div>

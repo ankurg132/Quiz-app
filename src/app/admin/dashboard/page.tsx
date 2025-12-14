@@ -78,7 +78,7 @@ export default function AdminDashboard() {
                     </h1>
                     <Link
                         href="/admin/create"
-                        className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition-all font-bold shadow-lg shadow-blue-900/20 hover:scale-105"
+                        className="px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-700 transition-all font-bold shadow-lg shadow-orange-900/20 hover:scale-105"
                     >
                         + Create New Quiz
                     </Link>
@@ -99,7 +99,7 @@ export default function AdminDashboard() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1 }}
-                                className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 hover:border-blue-500/50 transition-all group relative shadow-lg shadow-black/20"
+                                className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 hover:border-orange-500/50 transition-all group relative shadow-lg shadow-black/20"
                             >
                                 <button
                                     onClick={(e) => deleteQuiz(e, quiz.id)}
@@ -109,12 +109,12 @@ export default function AdminDashboard() {
                                     ✕
                                 </button>
 
-                                <h2 className="text-xl font-bold mb-2 group-hover:text-blue-400 transition-colors pr-8 text-white">
+                                <h2 className="text-xl font-bold mb-2 group-hover:text-orange-400 transition-colors pr-8 text-white">
                                     {quiz.info?.title || "Untitled Quiz"}
                                 </h2>
                                 <div className="mb-4 flex items-center gap-2">
                                     <span className="text-xs uppercase tracking-wider text-neutral-500 font-bold">Pin:</span>
-                                    <span className="font-mono text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md text-sm border border-blue-500/20 select-all">
+                                    <span className="font-mono text-orange-400 bg-orange-500/10 px-2 py-1 rounded-md text-sm border border-orange-500/20 select-all">
                                         {quiz.id}
                                     </span>
                                 </div>
@@ -127,7 +127,7 @@ export default function AdminDashboard() {
                                     </span>
                                     <Link
                                         href={`/admin/quiz/${quiz.id}`}
-                                        className="text-blue-400 hover:text-blue-300 text-sm font-bold group-hover:translate-x-1 transition-transform"
+                                        className="text-orange-400 hover:text-orange-300 text-sm font-bold group-hover:translate-x-1 transition-transform"
                                     >
                                         Manage →
                                     </Link>

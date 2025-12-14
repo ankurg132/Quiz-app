@@ -41,14 +41,14 @@ export default function AdminLogin() {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg bg-neutral-800 border-neutral-700 text-white focus:border-blue-500 focus:outline-none transition-colors placeholder:text-neutral-600"
+                            className="w-full px-4 py-3 rounded-lg bg-neutral-800 border-neutral-700 text-white focus:border-orange-500 focus:outline-none transition-colors placeholder:text-neutral-600"
                             placeholder="Enter admin password"
                         />
                     </div>
                     {error && <p className="text-red-400 text-sm">{error}</p>}
                     <button
                         type="submit"
-                        className="w-full py-3 rounded-lg bg-blue-600 font-bold hover:bg-blue-700 transition-all transform hover:scale-[1.02] text-white shadow-lg shadow-blue-900/20"
+                        className="w-full py-3 rounded-lg bg-orange-600 font-bold hover:bg-orange-700 transition-all transform hover:scale-[1.02] text-white shadow-lg shadow-orange-900/20"
                     >
                         Access Dashboard
                     </button>

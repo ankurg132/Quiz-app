@@ -104,7 +104,7 @@ export default function Home() {
                         <Gamepad2 className="w-10 h-10 text-orange-500" />
                     </motion.div>
                     <h1 className="text-5xl font-black tracking-tighter text-white mb-2">
-                        Quiz<span className="text-orange-500">Live</span>
+                        ML Bhopal <span className="text-orange-500">Quiz</span>
                     </h1>
                     <p className="text-neutral-400 font-medium">Enter the arena and compete.</p>
                 </div>

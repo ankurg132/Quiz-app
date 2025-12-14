@@ -138,7 +138,7 @@ export default function CreateQuiz() {
                     <input
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl bg-neutral-800 border border-neutral-700 focus:border-blue-500 outline-none transition-colors text-lg placeholder:text-neutral-600"
+                        className="w-full px-4 py-3 rounded-xl bg-neutral-800 border border-neutral-700 focus:border-orange-500 outline-none transition-colors text-lg placeholder:text-neutral-600"
                         placeholder="e.g. Flutter Basics Trivia"
                     />
                 </div>
@@ -158,7 +158,7 @@ export default function CreateQuiz() {
                                 ✕
                             </button>
 
-                            <h3 className="text-lg font-bold mb-4 text-blue-400">
+                            <h3 className="text-lg font-bold mb-4 text-orange-400">
                                 Question {qIndex + 1}
                             </h3>
 
@@ -170,7 +170,7 @@ export default function CreateQuiz() {
                                     <input
                                         value={q.text}
                                         onChange={(e) => updateQuestion(qIndex, "text", e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 focus:border-blue-500 outline-none transition-colors"
+                                        className="w-full px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 focus:border-orange-500 outline-none transition-colors"
                                         placeholder="Enter question..."
                                     />
                                 </div>
@@ -185,7 +185,7 @@ export default function CreateQuiz() {
                                             onChange={(e) =>
                                                 e.target.files?.[0] && handleImageUpload(qIndex, e.target.files[0])
                                             }
-                                            className="text-sm text-neutral-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer"
+                                            className="text-sm text-neutral-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-500 cursor-pointer"
                                         />
                                     </div>
                                     {q.imageUrl && (
@@ -207,7 +207,7 @@ export default function CreateQuiz() {
                                             className={`w-full px-3 py-2 pl-10 rounded-lg bg-neutral-800 border ${q.correctIndex === oIndex
                                                 ? "border-green-500 ring-1 ring-green-500 bg-green-900/10"
                                                 : "border-neutral-700"
-                                                } focus:border-blue-500 outline-none transition-colors`}
+                                                } focus:border-orange-500 outline-none transition-colors`}
                                             placeholder={`Option ${oIndex + 1}`}
                                         />
                                         <button
@@ -231,7 +231,7 @@ export default function CreateQuiz() {
                                     onChange={(e) =>
                                         updateQuestion(qIndex, "timeLimit", parseInt(e.target.value) || 0)
                                     }
-                                    className="w-20 px-3 py-1 rounded-lg bg-neutral-800 border border-neutral-700 text-center focus:border-blue-500 outline-none"
+                                    className="w-20 px-3 py-1 rounded-lg bg-neutral-800 border border-neutral-700 text-center focus:border-orange-500 outline-none"
                                 />
                             </div>
                         </motion.div>
@@ -240,7 +240,7 @@ export default function CreateQuiz() {
 
                 <button
                     onClick={addQuestion}
-                    className="w-full py-4 rounded-xl border-2 border-dashed border-neutral-800 text-neutral-500 hover:border-blue-500 hover:text-blue-500 transition-colors font-bold uppercase tracking-wider text-sm"
+                    className="w-full py-4 rounded-xl border-2 border-dashed border-neutral-800 text-neutral-500 hover:border-orange-500 hover:text-orange-500 transition-colors font-bold uppercase tracking-wider text-sm"
                 >
                     + Add Question
                 </button>

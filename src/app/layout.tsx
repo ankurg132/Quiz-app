@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "Real-time Quiz App",
+    title: "ML Bhopal Quiz",
     description: "Play live quizzes!",
 };
 

@@ -50,7 +50,6 @@ export default function QuizControlPanel() {
         if (!quiz || quiz.state.status !== "active") return;
 
         let interval: NodeJS.Timeout;
-        let timeout: NodeJS.Timeout;
 
         // 1. Question Timer (Show Result is FALSE)
         if (!quiz.state.showResult) {
@@ -78,24 +77,38 @@ export default function QuizControlPanel() {
 
         // 2. Leaderboard Timer (Show Result is TRUE)
         else {
-            // Wait 5 seconds then go to next question
-            timeout = setTimeout(() => {
-                nextQuestion();
-            }, 20000);
+            // Initialize timer for leaderboard if it's 0 (or just switched)
+            // We'll use a local ref or just rely on the interval to tick down if we set it initially
+            // But here we can just set it to 20 if we assume this effect runs on phase switch
+
+            // Note: We need to avoid resetting it on every render if specific updates happen
+            // Ideally we track "phase start time" but for simplicity:
+
+            interval = setInterval(() => {
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(interval);
+                        nextQuestion();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
         }
 
         return () => {
             if (interval) clearInterval(interval);
-            if (timeout) clearTimeout(timeout);
         };
-    }, [quiz?.state?.status, quiz?.state?.showResult, quiz?.state?.currentQuestionIndex]); // Dependency on these triggers the effect when phase changes
+    }, [quiz?.state?.status, quiz?.state?.showResult, quiz?.state?.currentQuestionIndex]);
 
-    // Reset timer when question changes
+    // Reset timer when phase changes
     useEffect(() => {
-        if (quiz?.questions?.[quiz?.state?.currentQuestionIndex]?.timeLimit) {
+        if (quiz?.state?.showResult) {
+            setTimeLeft(20); // 20s for leaderboard
+        } else if (quiz?.questions?.[quiz?.state?.currentQuestionIndex]?.timeLimit) {
             setTimeLeft(quiz.questions[quiz.state.currentQuestionIndex].timeLimit);
         }
-    }, [quiz?.state?.currentQuestionIndex]);
+    }, [quiz?.state?.showResult, quiz?.state?.currentQuestionIndex]);
 
     const updateState = async (updates: any) => {
         if (!id) return;
@@ -185,7 +198,7 @@ export default function QuizControlPanel() {
                                     onClick={toggleResults}
                                     className={`w-full py-3 rounded-xl font-bold transition-all hover:scale-[1.02] shadow-lg ${quiz.state.showResult
                                         ? "bg-purple-600 hover:bg-purple-500 shadow-purple-900/20"
-                                        : "bg-blue-600 hover:bg-blue-500 shadow-blue-900/20"
+                                        : "bg-orange-600 hover:bg-orange-500 shadow-orange-900/20"
                                         }`}
                                 >
                                     {quiz.state.showResult ? "Hide Leaderboard" : "Show Leaderboard"}
@@ -241,7 +254,7 @@ export default function QuizControlPanel() {
                                             Q{quiz.state.currentQuestionIndex + 1}
                                         </span>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-2xl font-black text-blue-500 font-mono w-[3ch] text-right">
+                                            <span className="text-2xl font-black text-orange-500 font-mono w-[3ch] text-right">
                                                 {timeLeft}
                                             </span>
                                             <span className="text-xs font-bold text-neutral-500 mt-1">SEC</span>
@@ -251,7 +264,7 @@ export default function QuizControlPanel() {
                                     {/* Timer Bar */}
                                     <div className="h-2 w-full bg-neutral-800 rounded-full overflow-hidden">
                                         <motion.div
-                                            className="h-full bg-blue-500"
+                                            className="h-full bg-orange-500"
                                             initial={{ width: "100%" }}
                                             animate={{ width: `${(timeLeft / (currentQ.timeLimit || 20)) * 100}%` }}
                                             transition={{ ease: "linear", duration: 0.5 }} // Smooth updates
@@ -277,16 +290,62 @@ export default function QuizControlPanel() {
                                 </div>
                             )}
 
-                            {quiz.state.showResult && (
-                                <div className="flex flex-col items-center justify-center p-12 text-center bg-neutral-950/50 rounded-xl border border-neutral-800 border-dashed">
-                                    <div className="text-5xl mb-6">🏆</div>
-                                    <h3 className="text-xl font-bold mb-2">Leaderboard Display</h3>
-                                    <p className="text-neutral-500">Showing Top 5 to everyone.</p>
-                                    <p className="text-xs text-blue-500 mt-4 font-bold uppercase tracking-widest animate-pulse">Next Q in 20s...</p>
+                            {quiz.state.status === "active" && quiz.state.showResult && (
+                                <div className="p-6 bg-neutral-900 rounded-2xl border border-neutral-800 shadow-xl space-y-8">
+                                    <div className="text-center">
+                                        <h3 className="text-neutral-500 font-bold uppercase tracking-widest text-xs mb-2">Results</h3>
+                                        <h2 className="text-2xl font-bold text-white mb-4">{currentQ?.text}</h2>
+                                    </div>
+
+                                    {/* Stats Graph */}
+                                    <div className="flex items-end justify-center gap-4 h-48 px-8">
+                                        {[0, 1, 2, 3].map((optIndex) => {
+                                            // Calculate Stats
+                                            // Filter for this question to be safe, though currentAnswerIndex is usually sufficient if we trust the flow
+                                            const count = participants.filter((p: any) =>
+                                                p.currentAnswerIndex === optIndex &&
+                                                p.answerQuestionIndex === quiz.state.currentQuestionIndex
+                                            ).length;
+
+                                            const total = participants.filter((p: any) => p.answerQuestionIndex === quiz.state.currentQuestionIndex).length || 1;
+                                            const percent = Math.round((count / total) * 100);
+                                            const height = Math.max(percent, 5); // min height for visibility
+                                            const isCorrect = optIndex === currentQ?.correctIndex;
+
+                                            return (
+                                                <div key={optIndex} className="flex-1 flex flex-col items-center gap-2 max-w-[100px] group">
+                                                    <span className="text-lg font-bold text-white mb-1 group-hover:scale-110 transition-transform">{count}</span>
+                                                    <div className="w-full h-40 bg-neutral-800/50 rounded-t-xl relative overflow-hidden flex items-end">
+                                                        <motion.div
+                                                            initial={{ height: 0 }}
+                                                            animate={{ height: `${height}%` }}
+                                                            transition={{ duration: 0.8, ease: "easeOut" }}
+                                                            className={clsx(
+                                                                "w-full absolute bottom-0 left-0 right-0 rounded-t-xl transition-colors",
+                                                                isCorrect ? "bg-green-500" : "bg-neutral-700"
+                                                            )}
+                                                        />
+                                                    </div>
+                                                    <span className={clsx(
+                                                        "w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm",
+                                                        isCorrect ? "bg-green-500 text-green-950" : "bg-neutral-800 text-neutral-500"
+                                                    )}>
+                                                        {String.fromCharCode(65 + optIndex)}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="text-center border-t border-neutral-800 pt-6">
+                                        <div className="inline-block bg-neutral-800 rounded-full px-4 py-1 text-xs text-orange-400 font-bold uppercase tracking-widest animate-pulse">
+                                            Next Question in {timeLeft}s...
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
-                            {quiz.state.status === "finished" && !quiz.state.showResult && (
+                            {quiz.state.status === "finished" && (
                                 <div className="p-8 bg-neutral-900 rounded-2xl border border-neutral-800 space-y-12">
                                     <div className="text-center">
                                         <h1 className="text-4xl font-black text-white mb-2">🎉 Final Results 🎉</h1>
@@ -370,7 +429,7 @@ export default function QuizControlPanel() {
                                                             transition={{ delay: i * 0.05 }}
                                                             className={clsx(
                                                                 "w-full rounded-t-md opacity-80 group-hover:opacity-100 transition-all",
-                                                                i === 0 ? "bg-yellow-500" : "bg-blue-600"
+                                                                i === 0 ? "bg-yellow-500" : "bg-orange-600"
                                                             )}
                                                         />
                                                         <div className="text-[10px] text-neutral-500 truncate w-full text-center">{p.name}</div>
@@ -415,7 +474,7 @@ export default function QuizControlPanel() {
                                                 <span className="text-xs text-neutral-600 font-mono hidden sm:block uppercase">
                                                     last: {p.currentAnswerIndex !== undefined && p.currentAnswerIndex !== -1 ? String.fromCharCode(65 + p.currentAnswerIndex) : "-"}
                                                 </span>
-                                                <span className="font-mono text-blue-400 font-bold">{p.score}</span>
+                                                <span className="font-mono text-orange-400 font-bold">{p.score}</span>
                                             </div>
                                         </div>
                                     ))}
