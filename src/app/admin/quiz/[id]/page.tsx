@@ -13,6 +13,9 @@ export default function QuizControlPanel() {
     const [quiz, setQuiz] = useState<any>(null);
     const [participants, setParticipants] = useState<any[]>([]);
 
+    // Timer and Auto-Advance Logic
+    const [timeLeft, setTimeLeft] = useState(0);
+
     useEffect(() => {
         if (!id) return;
         const quizRef = ref(database, `quizzes/${id}`);
@@ -26,11 +29,7 @@ export default function QuizControlPanel() {
             const data = snapshot.val();
             if (data) {
                 const list = Object.values(data).sort((a: any, b: any) => {
-                    // Sort by score descending
-                    if (b.score !== a.score) {
-                        return b.score - a.score;
-                    }
-                    // Tie-breaker: lastAnswerTime (earlier is better/faster)
+                    if (b.score !== a.score) return b.score - a.score;
                     return (a.lastAnswerTime || Number.MAX_VALUE) - (b.lastAnswerTime || Number.MAX_VALUE);
                 });
                 setParticipants(list);
@@ -44,6 +43,58 @@ export default function QuizControlPanel() {
             unsubParticipants();
         };
     }, [id]);
+
+    // Game Loop Effect
+    useEffect(() => {
+        if (!quiz || quiz.state.status !== "active") return;
+
+        let interval: NodeJS.Timeout;
+        let timeout: NodeJS.Timeout;
+
+        // 1. Question Timer (Show Result is FALSE)
+        if (!quiz.state.showResult) {
+            const currentQ = quiz.questions?.[quiz.state.currentQuestionIndex];
+            const limit = currentQ?.timeLimit || 20;
+
+            // Only set time left if we just entered this state (this is tricky with just useEffect, 
+            // simplifiction: we set it and if it drifts it drifts. Host is authority.)
+            // Better: We track it locally. The issue is React re-renders. 
+            // We'll set it once when index changes.
+            if (timeLeft === 0) setTimeLeft(limit);
+
+            interval = setInterval(() => {
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(interval);
+                        // Trigger Leaderboard
+                        updateState({ showResult: true });
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+
+        // 2. Leaderboard Timer (Show Result is TRUE)
+        else {
+            // Wait 5 seconds then go to next question
+            timeout = setTimeout(() => {
+                nextQuestion();
+            }, 20000);
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+            if (timeout) clearTimeout(timeout);
+        };
+    }, [quiz?.state?.status, quiz?.state?.showResult, quiz?.state?.currentQuestionIndex]); // Dependency on these triggers the effect when phase changes
+
+    // Reset timer when question changes
+    useEffect(() => {
+        if (quiz?.questions?.[quiz?.state?.currentQuestionIndex]?.timeLimit) {
+            setTimeLeft(quiz.questions[quiz.state.currentQuestionIndex].timeLimit);
+        }
+    }, [quiz?.state?.currentQuestionIndex]);
 
     const updateState = async (updates: any) => {
         if (!id) return;
@@ -237,8 +288,8 @@ export default function QuizControlPanel() {
                                         >
                                             <div className="flex items-center gap-3">
                                                 <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${i === 0 ? "bg-yellow-500 text-black" :
-                                                        i === 1 ? "bg-gray-400 text-black" :
-                                                            i === 2 ? "bg-orange-700 text-white" : "bg-gray-600 text-gray-300"
+                                                    i === 1 ? "bg-gray-400 text-black" :
+                                                        i === 2 ? "bg-orange-700 text-white" : "bg-gray-600 text-gray-300"
                                                     }`}>
                                                     {i + 1}
                                                 </span>

@@ -70,26 +70,26 @@ export default function AdminDashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-8">
+        <div className="min-h-screen bg-neutral-950 text-white p-8 font-sans">
             <div className="max-w-6xl mx-auto">
                 <div className="flex justify-between items-center mb-12">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                    <h1 className="text-4xl font-bold text-white tracking-tight">
                         Admin Dashboard
                     </h1>
                     <Link
                         href="/admin/create"
-                        className="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 transition-colors font-semibold shadow-lg shadow-blue-500/20"
+                        className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition-all font-bold shadow-lg shadow-blue-900/20 hover:scale-105"
                     >
                         + Create New Quiz
                     </Link>
                 </div>
 
                 {loading ? (
-                    <div className="text-center text-gray-500 animate-pulse">Loading quizzes...</div>
+                    <div className="text-center text-neutral-500 animate-pulse">Loading quizzes...</div>
                 ) : quizzes.length === 0 ? (
-                    <div className="text-center py-20 bg-gray-800/50 rounded-2xl border border-gray-700">
-                        <p className="text-xl text-gray-400">No quizzes found.</p>
-                        <p className="text-gray-500 mt-2">Create your first quiz to get started!</p>
+                    <div className="text-center py-20 bg-neutral-900/50 rounded-2xl border border-neutral-800">
+                        <p className="text-xl text-neutral-400">No quizzes found.</p>
+                        <p className="text-neutral-500 mt-2">Create your first quiz to get started!</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -99,35 +99,35 @@ export default function AdminDashboard() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1 }}
-                                className="bg-gray-800 rounded-xl p-6 border border-gray-700 hover:border-blue-500/50 transition-colors group relative"
+                                className="bg-neutral-900 rounded-2xl p-6 border border-neutral-800 hover:border-blue-500/50 transition-all group relative shadow-lg shadow-black/20"
                             >
                                 <button
                                     onClick={(e) => deleteQuiz(e, quiz.id)}
-                                    className="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition-colors p-2 z-10"
+                                    className="absolute top-4 right-4 text-neutral-600 hover:text-red-500 transition-colors p-2 z-10"
                                     title="Delete Quiz"
                                 >
                                     ✕
                                 </button>
 
-                                <h2 className="text-xl font-bold mb-2 group-hover:text-blue-400 transition-colors pr-8">
+                                <h2 className="text-xl font-bold mb-2 group-hover:text-blue-400 transition-colors pr-8 text-white">
                                     {quiz.info?.title || "Untitled Quiz"}
                                 </h2>
-                                <div className="mb-4">
-                                    <span className="text-xs uppercase tracking-wider text-gray-400 font-bold mr-2">Pin:</span>
-                                    <span className="font-mono text-blue-400 bg-blue-900/30 px-2 py-1 rounded text-sm select-all">
+                                <div className="mb-4 flex items-center gap-2">
+                                    <span className="text-xs uppercase tracking-wider text-neutral-500 font-bold">Pin:</span>
+                                    <span className="font-mono text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md text-sm border border-blue-500/20 select-all">
                                         {quiz.id}
                                     </span>
                                 </div>
-                                <p className="text-sm text-gray-500 mb-4">
+                                <p className="text-sm text-neutral-500 mb-6">
                                     {new Date(quiz.info?.createdAt || Date.now()).toLocaleDateString()}
                                 </p>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm bg-gray-700 px-3 py-1 rounded-full text-gray-300">
+                                    <span className="text-xs font-bold bg-neutral-800 px-3 py-1 rounded-full text-neutral-400 border border-neutral-700">
                                         {quiz.questions?.length || 0} Questions
                                     </span>
                                     <Link
                                         href={`/admin/quiz/${quiz.id}`}
-                                        className="text-blue-400 hover:text-blue-300 text-sm font-semibold"
+                                        className="text-blue-400 hover:text-blue-300 text-sm font-bold group-hover:translate-x-1 transition-transform"
                                     >
                                         Manage →
                                     </Link>

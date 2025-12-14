@@ -21,6 +21,8 @@ export default function GamePage() {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
+    const [timeLeft, setTimeLeft] = useState<number>(0);
+
     // Init
     useEffect(() => {
         const storedUserId = localStorage.getItem("quizUserId");
@@ -50,18 +52,15 @@ export default function GamePage() {
             setMyParticipant(snapshot.val());
         });
 
-        // Listen to all participants for leaderboard (optimized: only when showing results might be better, but keeping simple)
+        // Listen to all participants for leaderboard
         const allParticipantsRef = ref(database, `quizzes/${quizId}/participants`);
         const unsubAll = onValue(allParticipantsRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 const list = Object.values(data).sort((a: any, b: any) => {
-                    // Sort by score descending
                     if (b.score !== a.score) {
                         return b.score - a.score;
                     }
-                    // Tie-breaker: lastAnswerTime (earlier is better/faster)
-                    // If one hasn't answered yet/has no time, they are 'slower'
                     return (a.lastAnswerTime || Number.MAX_VALUE) - (b.lastAnswerTime || Number.MAX_VALUE);
                 });
                 setLeaderboard(list.slice(0, 5)); // Top 5
@@ -78,16 +77,26 @@ export default function GamePage() {
     // Update current question local state when global state index changes
     useEffect(() => {
         if (quizState && questions.length > 0 && quizState.currentQuestionIndex >= 0) {
-            setCurrentQuestion(questions[quizState.currentQuestionIndex]);
-            // Reset local selection for new question
-            if (!isSubmitted) { // Only reset if moving to new question and previous was handled? 
-                // Actually, we should track which question we answered. 
-                // Simplified: Reset whenever index changes.
-                // Problem: If user refreshes, they lose local selection state but server might have it?
-                // For MVP: Reset local state on index change.
+            const index = quizState.currentQuestionIndex;
+            setCurrentQuestion(questions[index]);
+
+            // Reset Timer
+            if (questions[index].timeLimit) {
+                setTimeLeft(questions[index].timeLimit);
             }
         }
     }, [quizState?.currentQuestionIndex, questions]);
+
+    // Timer Countdown
+    useEffect(() => {
+        if (quizState?.status === "active" && !quizState.showResult && timeLeft > 0) {
+            const timer = setInterval(() => {
+                setTimeLeft((prev) => prev - 1);
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [quizState?.status, quizState?.showResult, timeLeft]);
+
 
     // Reset selection when question index changes
     useEffect(() => {
@@ -103,16 +112,9 @@ export default function GamePage() {
         setIsSubmitted(true);
 
         const isCorrect = optionIndex === currentQuestion.correctIndex;
-        const points = isCorrect ? 10 : 0; // Simple scoring
+        const points = isCorrect ? 10 : 0;
 
-        // Update server
-        // We transactionally update score? Or just set it. 
-        // To prevent cheating, server should calc score, but we are doing client-side for MVP.
         const myRef = ref(database, `quizzes/${quizId}/participants/${userId}`);
-        // We need to read current score first or use transaction
-        // Let's assume we just add to it.
-
-        // Actually, listening to 'myParticipant' gives us current score.
         const newScore = (myParticipant?.score || 0) + points;
 
         await set(myRef, {
@@ -123,23 +125,23 @@ export default function GamePage() {
         });
     };
 
-    if (!quizState) return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">Loading...</div>;
+    if (!quizState) return <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center font-sans">Loading...</div>;
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-4 flex flex-col items-center justify-center overflow-hidden">
-
+        <div className="min-h-screen bg-neutral-950 text-white p-4 flex flex-col items-center justify-center font-sans theme-premium">
             {/* WAITING ROOM */}
             {quizState.status === "waiting" && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-center"
+                    className="text-center max-w-md w-full bg-neutral-900 p-8 rounded-2xl border border-neutral-800 shadow-2xl"
                 >
-                    <div className="text-6xl mb-6 animate-bounce">⏳</div>
-                    <h1 className="text-3xl font-bold mb-4">Waiting for Host...</h1>
-                    <p className="text-gray-400">You are in! Get ready.</p>
-                    <div className="mt-8 p-4 bg-gray-800 rounded-lg inline-block border border-gray-700">
-                        <span className="text-gray-500 text-sm block mb-1">Signed in as</span>
+                    <div className="text-6xl mb-6 animate-pulse">⏳</div>
+                    <h1 className="text-3xl font-bold mb-4 text-white tracking-tight">Waiting for Host</h1>
+                    <p className="text-neutral-400 mb-8">The game will start shortly. Get ready!</p>
+
+                    <div className="p-4 bg-neutral-800/50 rounded-xl border border-neutral-700">
+                        <span className="text-neutral-500 text-xs font-bold uppercase tracking-wider block mb-1">You Joined As</span>
                         <span className="font-bold text-xl text-blue-400">{myParticipant?.name}</span>
                     </div>
                 </motion.div>
@@ -149,25 +151,46 @@ export default function GamePage() {
             {quizState.status === "active" && (
                 <div className="w-full max-w-2xl">
                     {/* Header info */}
-                    <div className="flex justify-between items-center mb-6 text-sm text-gray-500 uppercase font-bold tracking-widest">
-                        <span>Q{quizState.currentQuestionIndex + 1} / {questions.length}</span>
-                        <span>Score: {myParticipant?.score || 0}</span>
+                    <div className="flex justify-between items-end mb-6 text-sm font-bold tracking-widest text-neutral-500">
+                        <div className="flex flex-col gap-1">
+                            <span className="text-xs uppercase">Question</span>
+                            <span className="text-white text-xl">{quizState.currentQuestionIndex + 1} <span className="text-neutral-600">/ {questions.length}</span></span>
+                        </div>
+                        <div className="flex flex-col gap-1 text-right">
+                            <span className="text-xs uppercase">Your Score</span>
+                            <span className="text-blue-400 text-xl">{myParticipant?.score || 0}</span>
+                        </div>
                     </div>
+
+                    {/* Timer Bar */}
+                    {!quizState.showResult && (
+                        <div className="w-full h-2 bg-neutral-800 rounded-full mb-8 overflow-hidden">
+                            <motion.div
+                                className="h-full bg-blue-500"
+                                initial={{ width: "100%" }}
+                                animate={{ width: `${(timeLeft / (currentQuestion?.timeLimit || 20)) * 100}%` }}
+                                transition={{ ease: "linear", duration: 1 }}
+                            />
+                        </div>
+                    )}
 
                     <AnimatePresence mode="wait">
                         {/* QUESTION CARD */}
                         {!quizState.showResult && currentQuestion && (
                             <motion.div
                                 key="question"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                className="bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-700"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="bg-neutral-900 p-6 md:p-8 rounded-3xl shadow-2xl border border-neutral-800"
                             >
                                 {currentQuestion.imageUrl && (
-                                    <img src={currentQuestion.imageUrl} className="w-full h-48 md:h-64 object-cover rounded-xl mb-6" alt="Question" />
+                                    <div className="relative w-full h-56 mb-8 rounded-2xl overflow-hidden border border-neutral-800">
+                                        <img src={currentQuestion.imageUrl} className="w-full h-full object-cover" alt="Question" />
+                                    </div>
                                 )}
-                                <h2 className="text-2xl font-bold mb-8 text-center">{currentQuestion.text}</h2>
+
+                                <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center leading-tight text-white">{currentQuestion.text}</h2>
 
                                 <div className="grid grid-cols-1 gap-4">
                                     {currentQuestion.options.map((opt: string, i: number) => (
@@ -176,17 +199,20 @@ export default function GamePage() {
                                             disabled={isSubmitted}
                                             onClick={() => submitAnswer(i)}
                                             className={twMerge(
-                                                "w-full p-4 rounded-xl text-left font-semibold transition-all transform active:scale-[0.98]",
+                                                "w-full p-5 rounded-xl text-left font-medium transition-all transform active:scale-[0.98] flex items-center group",
                                                 isSubmitted
                                                     ? (i === selectedOption
-                                                        ? "bg-blue-600 ring-2 ring-blue-400 text-white"
-                                                        : "bg-gray-700 text-gray-400 opacity-50")
-                                                    : "bg-gray-700 hover:bg-gray-600 text-white hover:shadow-lg hover:ring-2 hover:ring-blue-500/20"
+                                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
+                                                        : "bg-neutral-800 text-neutral-500 opacity-50")
+                                                    : "bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white"
                                             )}
                                         >
-                                            <span className="mr-4 opacity-50 text-sm">
+                                            <div className={twMerge(
+                                                "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold mr-4 transition-colors",
+                                                isSubmitted && i === selectedOption ? "bg-white/20 text-white" : "bg-neutral-700 text-neutral-400 group-hover:bg-neutral-600 group-hover:text-white"
+                                            )}>
                                                 {String.fromCharCode(65 + i)}
-                                            </span>
+                                            </div>
                                             {opt}
                                         </button>
                                     ))}
@@ -198,35 +224,49 @@ export default function GamePage() {
                         {quizState.showResult && (
                             <motion.div
                                 key="result"
-                                initial={{ opacity: 0, scale: 0.9 }}
+                                initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                className="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700 text-center"
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-neutral-900 p-8 rounded-3xl shadow-2xl border border-neutral-800"
                             >
-                                <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                                    Leaderboard
-                                </h2>
-                                <div className="space-y-4">
+                                <div className="text-center mb-8">
+                                    <h2 className="text-3xl font-bold mb-8 text-white">
+                                        Leaderboard
+                                    </h2>
+                                    <p className="text-neutral-500">Top 5 Players</p>
+                                </div>
+
+                                <div className="space-y-3">
                                     {leaderboard.map((p: any, i: number) => (
                                         <div
                                             key={i}
-                                            className={`flex justify-between items-center p-4 rounded-xl ${p.name === myParticipant?.name ? "bg-blue-900/30 border border-blue-500/50" : "bg-gray-700/50"
-                                                }`}
+                                            className={twMerge(
+                                                "flex justify-between items-center p-4 rounded-xl border transition-all",
+                                                p.name === myParticipant?.name
+                                                    ? "bg-blue-600/10 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
+                                                    : "bg-neutral-800/50 border-neutral-800"
+                                            )}
                                         >
                                             <div className="flex items-center gap-4">
-                                                <span className={`w-8 h-8 flex items-center justify-center rounded-full font-bold ${i === 0 ? "bg-yellow-500 text-black" :
-                                                    i === 1 ? "bg-gray-400 text-black" :
-                                                        i === 2 ? "bg-orange-700 text-white" : "bg-gray-700 text-gray-400"
-                                                    }`}>
-                                                    {i + 1}
-                                                </span>
-                                                <span className="font-semibold">{p.name}</span>
+                                                <div className={twMerge(
+                                                    "w-10 h-10 flex items-center justify-center rounded-lg font-bold text-lg",
+                                                    i === 0 ? "bg-yellow-500 text-yellow-950" :
+                                                        i === 1 ? "bg-neutral-400 text-neutral-900" :
+                                                            i === 2 ? "bg-orange-700 text-orange-100" : "bg-neutral-800 text-neutral-500"
+                                                )}>
+                                                    #{i + 1}
+                                                </div>
+                                                <span className={clsx("font-semibold text-lg", p.name === myParticipant?.name ? "text-blue-400" : "text-neutral-200")}>{p.name}</span>
                                             </div>
-                                            <span className="font-mono text-xl text-blue-400">{p.score}</span>
+                                            <span className="font-mono text-xl font-bold text-neutral-400">{p.score}</span>
                                         </div>
                                     ))}
                                 </div>
-                                <p className="mt-8 text-gray-400 animate-pulse">Waiting for host...</p>
+
+                                <div className="mt-8 flex items-center justify-center gap-2 text-neutral-500 text-sm animate-pulse">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    Next question starting soon...
+                                </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -236,24 +276,57 @@ export default function GamePage() {
             {/* GAME OVER */}
             {quizState.status === "finished" && (
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="text-center max-w-md w-full"
+                    className="text-center max-w-2xl w-full"
                 >
-                    <div className="text-6xl mb-6">🎉</div>
-                    <h1 className="text-4xl font-bold mb-2">Game Over!</h1>
-                    <p className="text-gray-400 mb-8">Thanks for playing.</p>
+                    <div className="text-6xl mb-6">🏆</div>
+                    <h1 className="text-4xl font-bold mb-4 text-white">Game Over!</h1>
+                    <p className="text-neutral-400 mb-8">Thank you for playing.</p>
 
-                    <div className="bg-gray-800 p-8 rounded-2xl border border-gray-700 mb-8">
-                        <p className="text-sm text-gray-500 uppercase tracking-widest mb-2">Your Score</p>
-                        <p className="text-6xl font-black text-blue-500">{myParticipant?.score}</p>
+                    <div className="bg-neutral-900 p-8 rounded-3xl border border-neutral-800 mb-8 shadow-xl">
+                        <p className="text-xs text-neutral-500 uppercase tracking-widest mb-2 font-bold">Your Final Score</p>
+                        <p className="text-7xl font-black text-blue-500 tracking-tighter">{myParticipant?.score}</p>
+                    </div>
+
+                    {/* Final Leaderboard */}
+                    <div className="bg-neutral-900 p-8 rounded-3xl border border-neutral-800 mb-8 text-left shadow-xl">
+                        <h2 className="text-2xl font-bold mb-6 text-white text-center">
+                            Final Leaderboard
+                        </h2>
+                        <div className="space-y-3">
+                            {leaderboard.map((p: any, i: number) => (
+                                <div
+                                    key={i}
+                                    className={twMerge(
+                                        "flex justify-between items-center p-4 rounded-xl border transition-all",
+                                        p.name === myParticipant?.name
+                                            ? "bg-blue-600/10 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
+                                            : "bg-neutral-800/50 border-neutral-800"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={twMerge(
+                                            "w-10 h-10 flex items-center justify-center rounded-lg font-bold text-lg",
+                                            i === 0 ? "bg-yellow-500 text-yellow-950" :
+                                                i === 1 ? "bg-neutral-400 text-neutral-900" :
+                                                    i === 2 ? "bg-orange-700 text-orange-100" : "bg-neutral-800 text-neutral-500"
+                                        )}>
+                                            #{i + 1}
+                                        </div>
+                                        <span className={clsx("font-semibold text-lg", p.name === myParticipant?.name ? "text-blue-400" : "text-neutral-200")}>{p.name}</span>
+                                    </div>
+                                    <span className="font-mono text-xl font-bold text-neutral-400">{p.score}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
                     <button
                         onClick={() => router.push("/")}
-                        className="w-full py-4 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold transition-colors"
+                        className="w-full py-4 bg-white text-neutral-900 hover:bg-neutral-200 rounded-xl font-bold transition-colors text-lg"
                     >
-                        Play Again
+                        Return Home
                     </button>
                 </motion.div>
             )}
