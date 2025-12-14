@@ -183,6 +183,20 @@ export default function QuizControlPanel() {
                             Game Controls
                         </h2>
 
+                        <div className="bg-neutral-800/50 p-4 rounded-xl border border-neutral-800 mb-6 text-center group relative overflow-hidden">
+                            <div className="absolute inset-0 bg-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <span className="text-xs uppercase text-neutral-500 font-bold tracking-widest block mb-1">Game PIN</span>
+                            <div
+                                className="text-3xl font-mono font-black text-orange-500 tracking-wider select-all cursor-pointer hover:text-orange-400 transition-colors relative z-10"
+                                title="Click to copy"
+                                onClick={() => {
+                                    if (id) navigator.clipboard.writeText(id as string);
+                                }}
+                            >
+                                {id}
+                            </div>
+                        </div>
+
                         {quiz.state.status === "waiting" && (
                             <button
                                 onClick={startQuiz}
@@ -197,7 +211,7 @@ export default function QuizControlPanel() {
                                 <button
                                     onClick={toggleResults}
                                     className={`w-full py-3 rounded-xl font-bold transition-all hover:scale-[1.02] shadow-lg ${quiz.state.showResult
-                                        ? "bg-purple-600 hover:bg-purple-500 shadow-purple-900/20"
+                                        ? "bg-neutral-800 text-orange-500 ring-2 ring-orange-500 shadow-orange-900/20"
                                         : "bg-orange-600 hover:bg-orange-500 shadow-orange-900/20"
                                         }`}
                                 >
