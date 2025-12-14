@@ -291,8 +291,20 @@ export default function QuizControlPanel() {
                                         <img src={currentQ.imageUrl} className="w-full h-48 object-cover rounded-xl border border-neutral-800" alt="Q" />
                                     )}
 
+                                    {/* Question Options (Neutral listing) */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+                                        {currentQ.options.map((opt: string, i: number) => (
+                                            <div key={i} className="bg-neutral-800 p-4 rounded-xl border border-neutral-700 text-neutral-300 flex items-center">
+                                                <span className="w-6 h-6 flex items-center justify-center rounded bg-neutral-700 text-neutral-400 text-xs font-bold mr-3">
+                                                    {String.fromCharCode(65 + i)}
+                                                </span>
+                                                <span className="font-medium">{opt}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
                                     {/* Live Stats display instead of options to hide answers */}
-                                    <div className="grid grid-cols-1 gap-6 mt-8">
+                                    <div className="grid grid-cols-1 gap-6 mt-6">
                                         <div className="bg-neutral-800/50 p-6 rounded-2xl border border-neutral-800 text-center">
                                             <span className="text-sm font-bold text-neutral-500 uppercase tracking-widest block mb-2">Live Answers Submitted</span>
                                             <div className="text-6xl font-black text-white tracking-tighter">

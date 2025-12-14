@@ -410,7 +410,9 @@ export default function GamePage() {
 
                                 <div className="mt-8 flex items-center justify-center gap-2 text-neutral-500 text-sm animate-pulse">
                                     <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                                    Next question starting soon...
+                                    {quizState.currentQuestionIndex < questions.length - 1
+                                        ? "Next question starting soon..."
+                                        : "Waiting for Final Results..."}
                                 </div>
                             </motion.div>
                         )}
