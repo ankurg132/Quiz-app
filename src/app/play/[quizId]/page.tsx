@@ -327,7 +327,7 @@ export default function GamePage() {
                                 {/* STATS CHART */}
                                 <div className="mb-8">
                                     <h3 className="text-xl font-bold text-center mb-6 text-white">Answer Distribution</h3>
-                                    <div className="flex items-end justify-center gap-4 h-48 px-4 sm:px-8">
+                                    <div className="flex items-end justify-center gap-2 sm:gap-4 h-48 px-2 sm:px-8">
                                         {answerStats.map((count, i) => {
                                             const isCorrect = i === currentQuestion.correctIndex;
                                             const total = participantCount || 1;
@@ -335,25 +335,37 @@ export default function GamePage() {
                                             const height = Math.max(percent, 5);
 
                                             return (
-                                                <div key={i} className="flex-1 flex flex-col items-center gap-2 max-w-[100px] group">
-                                                    <span className="text-lg font-bold text-white mb-1 group-hover:scale-110 transition-transform">{count}</span>
-                                                    <div className="w-full h-40 bg-neutral-800/50 rounded-t-xl relative overflow-hidden flex items-end">
+                                                <div key={i} className="flex-1 flex flex-col items-center gap-1 sm:gap-2 max-w-[100px] group">
+                                                    <motion.span
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: 0.2 + (i * 0.1) }}
+                                                        className="text-sm sm:text-lg font-bold text-white mb-1 group-hover:scale-110 transition-transform"
+                                                    >
+                                                        {count}
+                                                    </motion.span>
+                                                    <div className="w-full h-32 sm:h-40 bg-neutral-800/50 rounded-t-xl relative overflow-hidden flex items-end">
                                                         <motion.div
                                                             initial={{ height: 0 }}
                                                             animate={{ height: `${height}%` }}
-                                                            transition={{ duration: 0.8, ease: "easeOut" }}
+                                                            transition={{ duration: 0.6, delay: i * 0.1, type: "spring", bounce: 0.2 }}
                                                             className={clsx(
                                                                 "w-full absolute bottom-0 left-0 right-0 rounded-t-xl transition-colors",
                                                                 isCorrect ? "bg-green-500" : "bg-neutral-700"
                                                             )}
                                                         />
                                                     </div>
-                                                    <span className={clsx(
-                                                        "w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm",
-                                                        isCorrect ? "bg-green-500 text-green-950" : "bg-neutral-800 text-neutral-500"
-                                                    )}>
+                                                    <motion.span
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        transition={{ delay: 0.3 + (i * 0.1) }}
+                                                        className={clsx(
+                                                            "w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg font-bold text-xs sm:text-sm shadow-md",
+                                                            isCorrect ? "bg-green-500 text-green-950" : "bg-neutral-800 text-neutral-500"
+                                                        )}
+                                                    >
                                                         {String.fromCharCode(65 + i)}
-                                                    </span>
+                                                    </motion.span>
                                                 </div>
                                             )
                                         })}

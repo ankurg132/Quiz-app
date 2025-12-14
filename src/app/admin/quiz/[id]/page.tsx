@@ -312,7 +312,7 @@ export default function QuizControlPanel() {
                                     </div>
 
                                     {/* Stats Graph */}
-                                    <div className="flex items-end justify-center gap-4 h-48 px-8">
+                                    <div className="flex items-end justify-center gap-2 sm:gap-4 h-48 px-2 sm:px-8">
                                         {[0, 1, 2, 3].map((optIndex) => {
                                             // Calculate Stats
                                             // Filter for this question to be safe, though currentAnswerIndex is usually sufficient if we trust the flow
@@ -327,9 +327,9 @@ export default function QuizControlPanel() {
                                             const isCorrect = optIndex === currentQ?.correctIndex;
 
                                             return (
-                                                <div key={optIndex} className="flex-1 flex flex-col items-center gap-2 max-w-[100px] group">
-                                                    <span className="text-lg font-bold text-white mb-1 group-hover:scale-110 transition-transform">{count}</span>
-                                                    <div className="w-full h-40 bg-neutral-800/50 rounded-t-xl relative overflow-hidden flex items-end">
+                                                <div key={optIndex} className="flex-1 flex flex-col items-center gap-1 sm:gap-2 max-w-[100px] group">
+                                                    <span className="text-sm sm:text-lg font-bold text-white mb-1 group-hover:scale-110 transition-transform">{count}</span>
+                                                    <div className="w-full h-32 sm:h-40 bg-neutral-800/50 rounded-t-xl relative overflow-hidden flex items-end">
                                                         <motion.div
                                                             initial={{ height: 0 }}
                                                             animate={{ height: `${height}%` }}
@@ -341,7 +341,7 @@ export default function QuizControlPanel() {
                                                         />
                                                     </div>
                                                     <span className={clsx(
-                                                        "w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm",
+                                                        "w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg font-bold text-xs sm:text-sm",
                                                         isCorrect ? "bg-green-500 text-green-950" : "bg-neutral-800 text-neutral-500"
                                                     )}>
                                                         {String.fromCharCode(65 + optIndex)}
